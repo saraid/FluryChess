@@ -104,6 +104,37 @@ module BoardConfiguration
       King.new('white').place_on(board, 'e5')
     end
   end
+
+  class TestCheckByPawn
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'f6')
+    end
+  end
+
+  class TestCheckByKnight
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      knight_pos = ['d3', 'f3', 'c4', 'g4', 'c6', 'g6', 'd7', 'f7']
+      Knight.new('black').place_on(board, knight_pos[rand(8)])
+    end
+  end
+
+  class TestCheckByBishop
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      bishop_pos = ['e7', 'h5', 'g7', 'a1']
+      Bishop.new('black').place_on(board, bishop_pos[rand(4)])
+    end
+  end
+
+  class TestCheckByRook
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      rook_pos = ['e1', 'b5', 'e7', 'f5']
+      Rook.new('black').place_on(board, rook_pos[rand(4)])
+    end
+  end
 end
 
 class Square
@@ -242,7 +273,9 @@ class Castle < Move
       when 'queen-side'
         destination = { :file => -3}
     end
-    destination = board.square(piece.cur_pos[:rank], piece.cur_pos[:file] + destination[:file])
+    # FIXME: Hack bad. BAD HACK BAD.
+    cur_pos = piece.instance_variable_get(:@square).to_hash
+    destination = board.square(cur_pos[:rank], cur_pos[:file] + destination[:file])
     @type = type
     super(piece, destination)
   end
@@ -395,8 +428,6 @@ module VectorMovement
 end
 
 class King < Piece
-  include VectorMovement
-
   def initialize(side)
     @has_moved = false
     super
@@ -407,7 +438,100 @@ class King < Piece
   end
 
   def in_check?(square = @square)
-    # stub
+    cur_pos = square.to_hash
+
+    # Pawn check
+    direction = @side == 'white' ? 1 : -1
+    [{ :rank => 1, :file =>  1 },
+     { :rank => 1, :file => -1 }].each do |adjustment|
+      threat = @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
+                             cur_pos[:file] + adjustment[:file])
+      return true if threat && threat.occupant.is_a?(Pawn) \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # Knight check
+    [{ :rank =>  2, :file =>  1},
+     { :rank =>  2, :file => -1},
+     { :rank => -2, :file =>  1},
+     { :rank => -2, :file => -1},
+     { :rank =>  1, :file =>  2},
+     { :rank =>  1, :file => -2},
+     { :rank => -1, :file =>  2},
+     { :rank => -1, :file => -2}].each do |adjustment|
+      threat = @board.square(cur_pos[:rank] + adjustment[:rank], cur_pos[:file] + adjustment[:file])
+      return true if threat && threat.occupant.is_a?(Knight) \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # North check
+    (cur_pos[:rank]+1..8).each do |rank|
+      threat = @board.square(rank, cur_pos[:file])
+      return true if threat && [Queen, Rook].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # East check
+    (cur_pos[:file]+1..8).each do |file|
+      threat = @board.square(cur_pos[:rank], file)
+      return true if threat && [Queen, Rook].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # North check
+    (1..cur_pos[:rank]-1).to_a.reverse.each do |rank|
+      threat = @board.square(rank, cur_pos[:file])
+      return true if threat && [Queen, Rook].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # West check
+    (1..cur_pos[:rank]-1).to_a.reverse.each do |file|
+      threat = @board.square(cur_pos[:rank], file)
+      return true if threat && [Queen, Rook].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+    end
+
+    # Northeast
+    adjustment = 1
+    begin
+      threat = @board.square(cur_pos[:rank] + adjustment, cur_pos[:file] + adjustment)
+      return true if threat && [Queen, Bishop].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+      break if threat.nil? || threat.occupied?
+      adjustment = adjustment.succ
+    end until threat.nil?
+
+    # Southeast
+    adjustment = 1
+    begin
+      threat = @board.square(cur_pos[:rank] - adjustment, cur_pos[:file] + adjustment)
+      return true if threat && [Queen, Bishop].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+      break if threat.nil? || threat.occupied?
+      adjustment = adjustment.succ
+    end until threat.nil?
+
+    # Southwest
+    adjustment = 1
+    begin
+      threat = @board.square(cur_pos[:rank] - adjustment, cur_pos[:file] - adjustment)
+      return true if threat && [Queen, Bishop].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+      break if threat.nil? || threat.occupied?
+      adjustment = adjustment.succ
+    end until threat.nil?
+
+    # Northeast
+    adjustment = 1
+    begin
+      threat = @board.square(cur_pos[:rank] + adjustment, cur_pos[:file] - adjustment)
+      return true if threat && [Queen, Bishop].any? { |type| threat.occupant.is_a? type } \
+                            && threat.occupied_by?(@side == 'white' ? 'black' : 'white')
+      break if threat.nil? || threat.occupied?
+      adjustment = adjustment.succ
+    end until threat.nil?
+
     return false
   end
 
@@ -420,6 +544,7 @@ class King < Piece
   end
 
   def generate_move_list
+    cur_pos = @square.to_hash
     @move_list = []
 
     [{ :rank =>  1, :file =>  1 },

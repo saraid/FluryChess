@@ -100,4 +100,15 @@ class KingMovements < Test::Unit::TestCase
     board = Board.new(BoardConfiguration::TestKingMovement)
     board['e5'].move_to! 'f6'
   end
+
+  def test_in_check
+    board = Board.new(BoardConfiguration::TestCheckByPawn)
+    assert(board['e5'].occupant.in_check?, "Pawn isn't checking correctly")
+    board = Board.new(BoardConfiguration::TestCheckByKnight)
+    assert(board['e5'].occupant.in_check?, "Knight isn't checking correctly")
+    board = Board.new(BoardConfiguration::TestCheckByRook)
+    assert(board['e5'].occupant.in_check?, "Rook isn't checking correctly")
+    board = Board.new(BoardConfiguration::TestCheckByBishop)
+    assert(board['e5'].occupant.in_check?, "Bishop isn't checking correctly")
+  end
 end
