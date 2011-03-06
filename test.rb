@@ -1,6 +1,87 @@
 require 'test/unit'
 load 'board.rb'
 
+module BoardConfiguration
+  class TestDoubleAdvance
+    def self.onto(board)
+      Pawn.new('white').place_on(board, "e2")
+      Pawn.new('white').place_on(board, "f2")
+      Pawn.new('black').place_on(board, "e3")
+    end
+  end
+
+  class TestEnPassant
+    def self.onto(board)
+      a = Pawn.new('white').place_on(board, "e5")
+      a.has_moved!
+      Pawn.new('black').place_on(board, "f7")
+    end
+  end
+
+  class TestRookMovement
+    def self.onto(board)
+      Rook.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'e7')
+      Pawn.new('white').place_on(board, 'h5')
+    end
+  end
+
+  class TestBishopMovement
+    def self.onto(board)
+      Bishop.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'g7')
+      Pawn.new('white').place_on(board, 'a1')
+    end
+  end
+
+  class TestQueenMovement
+    def self.onto(board)
+      Queen.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'e7')
+      Pawn.new('white').place_on(board, 'h5')
+      Pawn.new('black').place_on(board, 'g7')
+      Pawn.new('white').place_on(board, 'a1')
+    end
+  end
+
+  class TestKingMovement
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+    end
+  end
+
+  class TestCheckByPawn
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'f6')
+    end
+  end
+
+  class TestCheckByKnight
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      knight_pos = ['d3', 'f3', 'c4', 'g4', 'c6', 'g6', 'd7', 'f7']
+      Knight.new('black').place_on(board, knight_pos[rand(8)])
+    end
+  end
+
+  class TestCheckByBishop
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      bishop_pos = ['e7', 'h5', 'g7', 'a1']
+      Bishop.new('black').place_on(board, bishop_pos[rand(4)])
+    end
+  end
+
+  class TestCheckByRook
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+      rook_pos = ['e1', 'b5', 'e7', 'f5']
+      Rook.new('black').place_on(board, rook_pos[rand(4)])
+    end
+  end
+end
+
 class PawnMovements < Test::Unit::TestCase
   def test_step
     board = Board.new
