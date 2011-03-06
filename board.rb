@@ -234,6 +234,38 @@ class EnPassant < Move
   end
 end
 
+class Castle < Move
+  def initialize(piece, board, type)
+    case type
+      when 'king-side'
+        destination = { :file => 2 }
+      when 'queen-side'
+        destination = { :file => -3}
+    end
+    destination = board.square(piece.cur_pos[:rank], piece.cur_pos[:file] + destination[:file])
+    @type = type
+    super(piece, destination)
+  end
+
+  def notation
+    return @notation if @notation
+    @notation = case type
+      when 'king-side'
+        '0-0'
+      when 'queen-side'
+        '0-0-0'
+    end
+  end
+
+  def possible?
+    false # stub
+  end
+
+  def do!
+    # stub
+  end
+end
+
 class Piece
   def initialize(side)
     @side = side
@@ -370,6 +402,10 @@ class King < Piece
     super
   end
 
+  def abbr
+    'K'
+  end
+
   def in_check?(square = @square)
     # stub
     return false
@@ -377,6 +413,10 @@ class King < Piece
 
   def has_moved!
     @has_moved = true
+  end
+
+  def castleable?
+    !@has_moved
   end
 
   def generate_move_list
@@ -398,10 +438,19 @@ class King < Piece
       end
     end
 
+    move = Castle.new(self, @board, 'king-side')
+    @move_list.push move if move.possible?
+    move = Castle.new(self, @board, 'queen-side')
+    @move_list.push move if move.possible?
+
   end
 end
 class Queen < Piece
   include VectorMovement
+
+  def abbr
+    'Q'
+  end
 
   def generate_move_list
     @move_list = []
@@ -413,6 +462,10 @@ end
 class Bishop < Piece
   include VectorMovement
 
+  def abbr
+    'B'
+  end
+
   def generate_move_list
     @move_list = []
 
@@ -420,6 +473,10 @@ class Bishop < Piece
   end
 end
 class Knight < Piece
+  def abbr
+    'N'
+  end
+
   def generate_move_list
     cur_pos = @square.to_hash
     @move_list = []
