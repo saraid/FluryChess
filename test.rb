@@ -67,3 +67,28 @@ class BishopMovements < Test::Unit::TestCase
     assert_raise(RuntimeError) { board['e5'].move_to! 'a1' }
   end
 end
+
+class QueenMovements < Test::Unit::TestCase
+  def test_vector_movement
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'e1'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'a5'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'e7'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'e8' }
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'h5' }
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'b8'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'g7'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    board['e5'].move_to! 'h2'
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'h8' }
+    board = Board.new(BoardConfiguration::TestQueenMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'a1' }
+  end
+end
