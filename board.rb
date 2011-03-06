@@ -81,6 +81,10 @@ class Square
     @square_color = ((rank + file) % 2 == 0) ? 'black' : 'white'
   end
 
+  def notation
+    "#{('a'..'h').to_a[@file-1]}#{@rank}"
+  end
+
   def occupy_with piece
     @piece = piece
   end
@@ -142,6 +146,14 @@ class Move
     return false if @must_capture && (!@destination.occupied? \
                  || @destination.occupied_by?(@piece.side == 'white' ? 'white' : 'black'))
     return true
+  end
+
+  def notation
+    return @notation if @notation
+    @notation = ''
+    @notation << @piece.abbr
+    @notation << 'x' if @destination.occupied?
+    @notation << @destination.notation
   end
 
   def do!
@@ -265,6 +277,10 @@ class Pawn < Piece
     @has_moved = false
     @passable = false
     super
+  end
+
+  def abbr
+    'P'
   end
 
   def has_moved!
