@@ -72,6 +72,14 @@ module BoardConfiguration
       Pawn.new('black').place_on(board, "f7")
     end
   end
+
+  class TestRookMovement
+    def self.onto(board)
+      Rook.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'e7')
+      Pawn.new('white').place_on(board, 'h5')
+    end
+  end
 end
 
 class Square
@@ -269,7 +277,57 @@ class Knight < Piece
     @move_list.compact!
   end
 end
-class Rook < Piece; end
+class Rook < Piece
+  def initialize(side)
+    @has_moved = false
+    super
+  end
+
+  def abbr
+    'R'
+  end
+
+  def castleable?
+    !@has_moved
+  end
+
+  def has_moved!
+    @has_moved = true
+  end
+
+  def generate_move_list
+    cur_pos = @square.to_hash
+    @move_list = []
+
+    # North
+    (cur_pos[:rank]+1..8).each do |rank|
+      move = Move.new(self, @board.square(rank, cur_pos[:file]))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+    end
+
+    # East
+    (cur_pos[:file]+1..8).each do |file|
+      move = Move.new(self, @board.square(cur_pos[:rank], file))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+    end
+
+    # South
+    (1..cur_pos[:rank]-1).to_a.reverse.each do |rank|
+      move = Move.new(self, @board.square(rank, cur_pos[:file]))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+    end
+
+    # West
+    (1..cur_pos[:file]).to_a.each do |file|
+      move = Move.new(self, @board.square(cur_pos[:rank], file))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+    end
+  end
+end
 class Pawn < Piece
   @@promotable_to = [Queen, Bishop, Knight, Rook]
 

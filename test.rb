@@ -37,3 +37,18 @@ class KnightMovements < Test::Unit::TestCase
     assert_raise(RuntimeError) { board['b1'].move_to! 'd2' }
   end
 end
+
+class RookMovements < Test::Unit::TestCase
+  def test_vector_movement
+    board = Board.new(BoardConfiguration::TestRookMovement)
+    board['e5'].move_to! 'e1'
+    board = Board.new(BoardConfiguration::TestRookMovement)
+    board['e5'].move_to! 'a5'
+    board = Board.new(BoardConfiguration::TestRookMovement)
+    board['e5'].move_to! 'e7'
+    board = Board.new(BoardConfiguration::TestRookMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'e8' }
+    board = Board.new(BoardConfiguration::TestRookMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'h5' }
+  end
+end
