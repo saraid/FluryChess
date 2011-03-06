@@ -59,7 +59,8 @@ module BoardConfiguration
 
   class TestEnPassant
     def self.onto(board)
-      Pawn.new('white').place_on(board, "e5")
+      a = Pawn.new('white').place_on(board, "e5")
+      a.has_moved!
       Pawn.new('black').place_on(board, "f7")
     end
   end
@@ -89,6 +90,10 @@ class Square
     @piece
   end
 
+  def remove!
+    @piece = nil
+  end
+
   def method_missing id, *args, &block
     if Piece.instance_methods.include? id
       return @piece.send(id, *args, &block)
@@ -106,6 +111,63 @@ class Square
   end
 end
 
+class Move
+  def initialize(piece, destination)
+    @piece = piece
+    @destination = destination
+  end
+
+  attr_accessor :destination
+
+  def must_capture!
+    @must_capture = true
+  end
+
+  def cannot_capture!
+    @cannot_capture = true
+  end
+
+  def possible?
+    return false if @destination.nil?
+    return false if @cannot_capture && @destination.occupied?
+    return false if @destination.occupied_by?(@piece.side == 'white' ? 'white' : 'black')
+    return false if @must_capture && (!@destination.occupied? \
+                 || @destination.occupied_by?(@piece.side == 'white' ? 'white' : 'black'))
+    return true
+  end
+
+  def do!
+    @piece.place_on @destination
+    @piece.has_moved! if @piece.respond_to? :has_moved!
+  end
+end
+
+class DoubleAdvance < Move
+  def do!
+    super
+    @piece.passable!
+  end
+end
+
+class EnPassant < Move
+  def initialize(piece, destination, passed)
+    @passed = passed
+    super(piece, destination)
+  end
+
+  def possible?
+    cannot_capture!
+    return false unless super
+    return false unless @passed.occupied?
+    return true if @passed.side != @piece.side
+  end
+
+  def do!
+    super
+    @passed.remove!
+  end
+end
+
 class Piece
   def initialize(side)
     @side = side
@@ -119,16 +181,17 @@ class Piece
     @side
   end
 
-  def place_on(board, at)
+  def place_on(board = @board, square)
     @board = board
-    @square = at.respond_to?(:occupy_with) ? at : @board[at]
+    @square.remove! if @square
+    @square = square.respond_to?(:occupy_with) ? square : @board[square]
     @square.occupy_with(self)
   end
 
   def can_move_to? square
     square = square.respond_to?(:occupy_with) ? square : @board[square]
     generate_move_list unless @move_list
-    @move_list.include? square
+    @move_list.detect {|move| move.destination == square }
   end
 
   def to_s
@@ -136,9 +199,8 @@ class Piece
   end
 
   def move_to! square
-    square = square.respond_to?(:occupy_with) ? square : @board[square]
-    raise "Can't move there" unless self.can_move_to? square
-    self.place_on(@board, square)
+    raise "Can't move there" unless (move = self.can_move_to? square)
+    move.do!
   end
 
   def generate_move_list
@@ -168,10 +230,9 @@ class Knight < Piece
      { :rank =>  1, :file => -2},
      { :rank => -1, :file =>  2},
      { :rank => -1, :file => -2}].each do |adjustment|
-      move = @board.square(cur_pos[:rank] + adjustment[:rank], cur_pos[:file] + adjustment[:file])
-      unless move && move.occupied? && move.occupied_by?(@side == 'white' ? 'white' : 'black')
-        @move_list.push move
-      end
+      move = Move.new(self, @board.square(cur_pos[:rank] + adjustment[:rank], \
+                                          cur_pos[:file] + adjustment[:file]))
+      @move_list.push move if move.possible?
     end
 
     @move_list.compact!
@@ -187,14 +248,12 @@ class Pawn < Piece
     super
   end
 
-  def move_to! square
-    square = square.respond_to?(:occupy_with) ? square : @board[square]
+  def has_moved!
     @has_moved = true
-    if square.to_hash[:rank] - @square.to_hash[:rank] == 2
-      @passable = true
-      # TODO: Enqueue a game event to set this to false.
-    end
-    super
+  end
+
+  def passable!
+    @passable = true
   end
 
   def passable?
@@ -207,33 +266,36 @@ class Pawn < Piece
     @move_list = []
 
     # Normal
-    move = @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file])
-    @move_list.push move unless move && move.occupied?
+    move = Move.new(self, @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
+    move.cannot_capture!
+    @move_list.push move if move.possible?
 
     # Double advance
     unless @has_moved
-      move = @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file])
-      @move_list.push move unless move && move.occupied?
+      move = DoubleAdvance.new(self, @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file]))
+      move.cannot_capture!
+      @move_list.push move if move.possible?
     end
 
     # Capture
     [{ :rank => 1, :file => -1},
      { :rank => 1, :file =>  1}].each do |adjustment|
-      move = @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
-                           cur_pos[:file] + adjustment[:file])
-      @move_list.push move if move && move.occupied_by?(@side == 'white' ? 'black' : 'white')
+      move = Move.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
+                                          cur_pos[:file] + adjustment[:file]))
+      move.must_capture!
+      @move_list.push move if move.possible?
     end
 
     # En passant
-    [{ :rank => 0, :file => -1},
-     { :rank => 0, :file =>  1}].each do |adjustment|
-      move = @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
-                           cur_pos[:file] + adjustment[:file])
-      @move_list.push move if move && move.occupied_by?(@side == 'white' ? 'black' : 'white') \
-                                   && move.occupant.passable?
+    [{ :rank => 1, :file => -1},
+     { :rank => 1, :file =>  1}].each do |adjustment|
+      move = EnPassant.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
+                                               cur_pos[:file] + adjustment[:file]),
+                                 @board.square(cur_pos[:rank], cur_pos[:file] + adjustment[:file]))
+      @move_list.push move if move.possible?
     end
-    
-    @move_list.compact!
+
+    @move_list
   end
 
   def promote_to! to
