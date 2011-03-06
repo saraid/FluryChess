@@ -8,8 +8,9 @@ class PawnMovements < Test::Unit::TestCase
   end
 
   def test_double_advance
-    board = Board.new
-    board['e2'].move_to! 'e4'
+    board = Board.new(BoardConfiguration::TestDoubleAdvance)
+    assert_raise(RuntimeError) { board['e2'].move_to! 'e4' }
+    board['f2'].move_to! 'f4'
   end
 
   def test_en_passant

@@ -57,6 +57,14 @@ module BoardConfiguration
     end
   end
 
+  class TestDoubleAdvance
+    def self.onto(board)
+      Pawn.new('white').place_on(board, "e2")
+      Pawn.new('white').place_on(board, "f2")
+      Pawn.new('black').place_on(board, "e3")
+    end
+  end
+
   class TestEnPassant
     def self.onto(board)
       a = Pawn.new('white').place_on(board, "e5")
@@ -143,6 +151,17 @@ class Move
 end
 
 class DoubleAdvance < Move
+  def initialize(piece, destination, skipped)
+    @skipped = skipped
+    super(piece, destination)
+  end
+
+  def possible?
+    return false unless super
+    return false if @skipped.occupied?
+    return true
+  end
+
   def do!
     super
     @piece.passable!
@@ -272,7 +291,8 @@ class Pawn < Piece
 
     # Double advance
     unless @has_moved
-      move = DoubleAdvance.new(self, @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file]))
+      move = DoubleAdvance.new(self, @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file]),
+                                     @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
       move.cannot_capture!
       @move_list.push move if move.possible?
     end
