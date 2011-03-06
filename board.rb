@@ -80,6 +80,14 @@ module BoardConfiguration
       Pawn.new('white').place_on(board, 'h5')
     end
   end
+
+  class TestBishopMovement
+    def self.onto(board)
+      Bishop.new('white').place_on(board, 'e5')
+      Pawn.new('black').place_on(board, 'g7')
+      Pawn.new('white').place_on(board, 'a1')
+    end
+  end
 end
 
 class Square
@@ -132,9 +140,12 @@ class Square
 end
 
 class Move
+  class InvalidDestination < Exception; end
+
   def initialize(piece, destination)
     @piece = piece
     @destination = destination
+    raise InvalidDestination if @destination.nil?
   end
 
   attr_accessor :destination
@@ -255,7 +266,56 @@ end
 
 class King < Piece; end
 class Queen < Piece; end
-class Bishop < Piece; end
+class Bishop < Piece
+  def generate_move_list
+    cur_pos = @square.to_hash
+    @move_list = []
+
+    # Northeast
+    adjustment = 1
+    begin
+      move = Move.new(self, @board.square(cur_pos[:rank] + adjustment, cur_pos[:file] + adjustment))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+      adjustment = adjustment.succ
+    rescue Move::InvalidDestination
+      break
+    end until move.destination.nil?
+
+    # Southeast
+    adjustment = 1
+    begin
+      move = Move.new(self, @board.square(cur_pos[:rank] - adjustment, cur_pos[:file] + adjustment))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+      adjustment = adjustment.succ
+    rescue Move::InvalidDestination
+      break
+    end until move.destination.nil?
+
+    # Southwest
+    adjustment = 1
+    begin
+      move = Move.new(self, @board.square(cur_pos[:rank] - adjustment, cur_pos[:file] - adjustment))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+      adjustment = adjustment.succ
+    rescue Move::InvalidDestination
+      break
+    end until move.destination.nil?
+
+    # Northwest
+    adjustment = 1
+    begin
+      move = Move.new(self, @board.square(cur_pos[:rank] + adjustment, cur_pos[:file] - adjustment))
+      @move_list.push move if move.possible?
+      break if move.destination.occupied?
+      adjustment = adjustment.succ
+    rescue Move::InvalidDestination
+      break
+    end until move.destination.nil?
+  end
+end
 class Knight < Piece
   def generate_move_list
     cur_pos = @square.to_hash
@@ -269,9 +329,12 @@ class Knight < Piece
      { :rank =>  1, :file => -2},
      { :rank => -1, :file =>  2},
      { :rank => -1, :file => -2}].each do |adjustment|
-      move = Move.new(self, @board.square(cur_pos[:rank] + adjustment[:rank], \
-                                          cur_pos[:file] + adjustment[:file]))
-      @move_list.push move if move.possible?
+      begin
+        move = Move.new(self, @board.square(cur_pos[:rank] + adjustment[:rank], \
+                                            cur_pos[:file] + adjustment[:file]))
+        @move_list.push move if move.possible?
+      rescue Move::InvalidDestination
+      end
     end
 
     @move_list.compact!
