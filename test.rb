@@ -92,3 +92,12 @@ class QueenMovements < Test::Unit::TestCase
     assert_raise(RuntimeError) { board['e5'].move_to! 'a1' }
   end
 end
+
+class KingMovements < Test::Unit::TestCase
+  def test_step
+    board = Board.new(BoardConfiguration::TestKingMovement)
+    board['e5'].move_to! 'e6'
+    board = Board.new(BoardConfiguration::TestKingMovement)
+    board['e5'].move_to! 'f6'
+  end
+end

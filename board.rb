@@ -98,6 +98,12 @@ module BoardConfiguration
       Pawn.new('white').place_on(board, 'a1')
     end
   end
+
+  class TestKingMovement
+    def self.onto(board)
+      King.new('white').place_on(board, 'e5')
+    end
+  end
 end
 
 class Square
@@ -275,8 +281,8 @@ class Piece
 end
 
 module VectorMovement
-  def cur_pos
-    @square.to_hash
+  def cur_pos(square = @square)
+    square.to_hash
   end
 
   def generate_move_list_cardinally
@@ -356,7 +362,44 @@ module VectorMovement
   end
 end
 
-class King < Piece; end
+class King < Piece
+  include VectorMovement
+
+  def initialize(side)
+    @has_moved = false
+    super
+  end
+
+  def in_check?(square = @square)
+    # stub
+    return false
+  end
+
+  def has_moved!
+    @has_moved = true
+  end
+
+  def generate_move_list
+    @move_list = []
+
+    [{ :rank =>  1, :file =>  1 },
+     { :rank =>  1, :file =>  0 },
+     { :rank =>  1, :file => -1 },
+     { :rank => -1, :file =>  1 },
+     { :rank => -1, :file =>  0 },
+     { :rank => -1, :file => -1 },
+     { :rank =>  0, :file =>  1 },
+     { :rank =>  0, :file => -1 }].each do |adjustment|
+      begin
+        move = Move.new(self, @board.square(cur_pos[:rank] + adjustment[:rank], \
+                                            cur_pos[:file] + adjustment[:file]))
+        @move_list.push move if move.possible? && !in_check?(move.destination)
+      rescue Move::InvalidDestination
+      end
+    end
+
+  end
+end
 class Queen < Piece
   include VectorMovement
 
