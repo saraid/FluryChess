@@ -8,6 +8,33 @@ class Object
   end
 end
 
+class Game
+end
+
+class Side
+  def self.register(side)
+    @@sides = Hash.new unless defined? @@sides
+    @@sides[side.name] = side
+  end
+
+  def self.find(name)
+    @@sides = Hash.new unless defined? @@sides
+    @@sides[name]
+  end
+
+  def self.create(*args)
+    args.each { |name| Side.new(name) }
+  end
+
+  def initialize(name)
+    @name = name
+    Side.register(self)
+  end
+
+  attr_accessor :king
+  attr_reader :name
+end
+
 class Board
   def initialize(configure = BoardConfiguration::Standard)
     @square = {}
@@ -41,6 +68,8 @@ end
 module BoardConfiguration
   class Standard
     def self.onto(board)
+      Side.create('white', 'black')
+
       King.new('white').place_on(board, 'e1')
       Queen.new('white').place_on(board, 'd1')
       ['c', 'f'].each { |file| Bishop.new('white').place_on(board, "#{file}1") }
@@ -60,6 +89,7 @@ module BoardConfiguration
   class TestKingMovement
     def self.onto(board)
       King.new('white').place_on(board, 'e5')
+      Queen.new('black').place_on(board, 'f1')
     end
   end
 end
@@ -93,7 +123,9 @@ class Square
   end
 
   def remove!
+    piece = @piece
     @piece = nil
+    return piece
   end
 
   def method_missing id, *args, &block
@@ -118,6 +150,7 @@ class Move
 
   def initialize(piece, destination)
     @piece = piece
+    @original_position = @piece.location
     @destination = destination
     raise InvalidDestination if @destination.nil?
   end
@@ -138,13 +171,24 @@ class Move
     return false if @destination.occupied_by?(@piece.side == 'white' ? 'white' : 'black')
     return false if @must_capture && (!@destination.occupied? \
                  || @destination.occupied_by?(@piece.side == 'white' ? 'white' : 'black'))
+    return false if causes_check?
     return true
+  end
+
+  def causes_check?
+    king = Side.find(@piece.side).king
+    return false if king.nil?
+    do!
+    causes_check = king.in_check?
+    reverse!
+    return causes_check
   end
 
   def notation
     return @notation if @notation
     @notation = ''
     @notation << @piece.abbr
+    @notation << @piece.location.notation
     @notation << 'x' if @destination.occupied?
     @notation << @destination.notation
   end
@@ -152,6 +196,11 @@ class Move
   def do!
     @piece.place_on @destination
     @piece.has_moved! if @piece.respond_to? :has_moved!
+  end
+
+  def reverse!
+    @piece.has_moved!(false) if @piece.respond_to? :has_moved!
+    @piece.place_on @original_position
   end
 end
 
@@ -171,6 +220,11 @@ class DoubleAdvance < Move
     super
     @piece.passable!
   end
+
+  def reverse!
+    super
+    @piece.passable!(false)
+  end
 end
 
 class EnPassant < Move
@@ -188,7 +242,12 @@ class EnPassant < Move
 
   def do!
     super
-    @passed.remove!
+    @removed = @passed.remove!
+  end
+
+  def reverse!
+    super
+    @removed.place_on(@passed)
   end
 end
 
@@ -200,8 +259,7 @@ class Castle < Move
       when 'queen-side'
         destination = { :file => -3}
     end
-    # FIXME: Hack bad. BAD HACK BAD.
-    cur_pos = piece.instance_variable_get(:@square).to_hash
+    cur_pos = piece.location.to_hash
     destination = board.square(cur_pos[:rank], cur_pos[:file] + destination[:file])
     @type = type
     super(piece, destination)
@@ -239,6 +297,10 @@ class Piece
     @side
   end
 
+  def location
+    @square
+  end
+
   def place_on(board = @board, square)
     @board = board
     @square.remove! if @square
@@ -259,6 +321,7 @@ class Piece
   def move_to! square
     raise "Can't move there" unless (move = self.can_move_to? square)
     move.do!
+    move
   end
 
   def generate_move_list
@@ -462,12 +525,17 @@ class King < Piece
     return false
   end
 
-  def has_moved!
-    @has_moved = true
+  def has_moved!(set = true)
+    @has_moved = set
   end
 
   def castleable?
     !@has_moved
+  end
+
+  def place_on(board = @board, square)
+    Side.find(@side).king = self
+    super
   end
 
   def generate_move_list
@@ -567,8 +635,8 @@ class Rook < Piece
     !@has_moved
   end
 
-  def has_moved!
-    @has_moved = true
+  def has_moved!(set = true)
+    @has_moved = set
   end
 
   def generate_move_list
@@ -590,12 +658,12 @@ class Pawn < Piece
     'P'
   end
 
-  def has_moved!
-    @has_moved = true
+  def has_moved!(set = true)
+    @has_moved = set
   end
 
-  def passable!
-    @passable = true
+  def passable!(set = true)
+    @passable = set
   end
 
   def passable?

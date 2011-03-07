@@ -4,6 +4,7 @@ load 'board.rb'
 module BoardConfiguration
   class TestDoubleAdvance
     def self.onto(board)
+      Side.create('white', 'black')
       Pawn.new('white').place_on(board, "e2")
       Pawn.new('white').place_on(board, "f2")
       Pawn.new('black').place_on(board, "e3")
@@ -12,6 +13,7 @@ module BoardConfiguration
 
   class TestEnPassant
     def self.onto(board)
+      Side.create('white', 'black')
       a = Pawn.new('white').place_on(board, "e5")
       a.has_moved!
       Pawn.new('black').place_on(board, "f7")
@@ -20,6 +22,7 @@ module BoardConfiguration
 
   class TestRookMovement
     def self.onto(board)
+      Side.create('white', 'black')
       Rook.new('white').place_on(board, 'e5')
       Pawn.new('black').place_on(board, 'e7')
       Pawn.new('white').place_on(board, 'h5')
@@ -28,6 +31,7 @@ module BoardConfiguration
 
   class TestBishopMovement
     def self.onto(board)
+      Side.create('white', 'black')
       Bishop.new('white').place_on(board, 'e5')
       Pawn.new('black').place_on(board, 'g7')
       Pawn.new('white').place_on(board, 'a1')
@@ -36,6 +40,7 @@ module BoardConfiguration
 
   class TestQueenMovement
     def self.onto(board)
+      Side.create('white', 'black')
       Queen.new('white').place_on(board, 'e5')
       Pawn.new('black').place_on(board, 'e7')
       Pawn.new('white').place_on(board, 'h5')
@@ -46,12 +51,14 @@ module BoardConfiguration
 
   class TestKingMovement
     def self.onto(board)
+      Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
     end
   end
 
   class TestCheckByPawn
     def self.onto(board)
+      Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
       Pawn.new('black').place_on(board, 'f6')
     end
@@ -59,6 +66,7 @@ module BoardConfiguration
 
   class TestCheckByKnight
     def self.onto(board)
+      Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
       knight_pos = ['d3', 'f3', 'c4', 'g4', 'c6', 'g6', 'd7', 'f7']
       Knight.new('black').place_on(board, knight_pos[rand(8)])
@@ -67,14 +75,16 @@ module BoardConfiguration
 
   class TestCheckByBishop
     def self.onto(board)
+      Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
-      bishop_pos = ['e7', 'h5', 'g7', 'a1']
+      bishop_pos = ['c7', 'h2', 'g7', 'a1']
       Bishop.new('black').place_on(board, bishop_pos[rand(4)])
     end
   end
 
   class TestCheckByRook
     def self.onto(board)
+      Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
       rook_pos = ['e1', 'b5', 'e7', 'f5']
       Rook.new('black').place_on(board, rook_pos[rand(4)])
@@ -98,6 +108,15 @@ class PawnMovements < Test::Unit::TestCase
     board = Board.new(BoardConfiguration::TestEnPassant)
     board['f7'].move_to! 'f5'
     board['e5'].move_to! 'f6'
+  end
+
+  def test_reverse_double_advance
+    board = Board.new(BoardConfiguration::TestDoubleAdvance)
+    pawn = board['f2'].occupant
+    move = board['f2'].move_to! 'f4'
+    move.reverse!
+    assert board['f2'].occupant == pawn
+    assert !board['f4'].occupied?
   end
 end
 
