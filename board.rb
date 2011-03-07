@@ -18,6 +18,7 @@ class Game
 
   def move command
     src, dst = command.split('-')
+    raise "No piece here..." unless @board[src].occupied?
     raise "Not your turn" unless @board[src].occupied_by? turn
     @history << @board[src].move_to!(dst)
     Side.list.each do |side| Side.find(side).pieces.each do |piece| piece.invalidate_move_list! end end
@@ -236,6 +237,7 @@ class Move
   def do!
     @piece.place_on @destination
     @piece.has_moved! if @piece.respond_to? :has_moved!
+    @original_piece.remove! if @original_piece
   end
 
   def reverse!
@@ -374,6 +376,10 @@ class Piece
     @square
   end
 
+  def remove!
+    @square = nil
+  end
+
   def place_on(board = @board, square)
     @board = board
     Side.find(@side) << self
@@ -383,12 +389,14 @@ class Piece
   end
 
   def can_move_to? square
+    return false if @square.nil?
     square = square.respond_to?(:occupy_with) ? square : @board[square]
     generate_move_list unless @move_list
     @move_list.detect {|move| move.destination == square }
   end
 
   def can_move?
+    return false if @square.nil?
     generate_move_list unless @move_list
     @move_list.length > 0
   end
@@ -401,10 +409,6 @@ class Piece
     raise "Can't move there" unless (move = self.can_move_to? square)
     move.do!
     move
-  end
-
-  def generate_move_list
-    @move_list = []
   end
 
   def invalidate_move_list!
@@ -632,7 +636,7 @@ class King < Piece
       begin
         move = Move.new(self, @board.square(cur_pos[:rank] + adjustment[:rank], \
                                             cur_pos[:file] + adjustment[:file]))
-        @move_list.push move if move.possible? && !in_check?(move.destination)
+        @move_list.push move if move.possible?
       rescue Move::InvalidDestination
       end
     end

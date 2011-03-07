@@ -270,4 +270,16 @@ class TestGame < Test::Unit::TestCase
     game.move('d8-h4')
     assert game.over?
   end
+
+  def test_scholars_mate
+    game = Game.new
+    game.move('e2-e4')
+    game.move('e7-e5')
+    game.move('d1-h5')
+    game.move('b8-c6')
+    game.move('f1-c4')
+    game.move('g8-f6')
+    game.move('h5-f7')
+    assert game.over?
+  end
 end
