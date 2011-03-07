@@ -258,3 +258,16 @@ class KingMovements < Test::Unit::TestCase
     assert_raise(RuntimeError) { board['e1'].move_to! 'g1' }
   end
 end
+
+class TestGame < Test::Unit::TestCase
+  def test_fools_mate
+    game = Game.new
+    game.move('f2-f3')
+    assert_raise(RuntimeError) { game.move('e1-f2') }
+    game.move('e7-e5')
+    assert !game.over?
+    game.move('g2-g4')
+    game.move('d8-h4')
+    assert game.over?
+  end
+end

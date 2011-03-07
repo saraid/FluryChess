@@ -9,9 +9,33 @@ class Object
 end
 
 class Game
+  def initialize
+    @history = []
+    @board = Board.new
+    @sides = Side.list
+    @turn = 0
+  end
+
+  def move command
+    src, dst = command.split('-')
+    raise "Not your turn" unless @board[src].occupied_by? turn
+    @history << @board[src].move_to!(dst)
+    Side.list.each do |side| Side.find(side).pieces.each do |piece| piece.invalidate_move_list! end end
+    @turn = @turn.succ
+  end
+
+  def turn
+    @sides[@turn % 2]
+  end
+
+  def over?
+    Side.find(turn).king.in_check? && Side.find(turn).pieces.none? { |piece| piece.can_move? }
+  end
 end
 
 class Side
+  # FIXME: Side needs to stop using class variables. Seriously now.
+
   def self.register(side)
     @@sides = Hash.new unless defined? @@sides
     @@sides[side.name] = side
@@ -26,8 +50,13 @@ class Side
     args.each { |name| Side.new(name) }
   end
 
+  def self.list
+    @@sides.keys
+  end
+
   def initialize(name)
     @name = name
+    @pieces = []
     Side.register(self)
   end
 
@@ -43,7 +72,11 @@ class Side
     @kingside_rook = val
   end
 
-  attr_reader :name
+  attr_reader :name, :pieces
+
+  def <<(piece)
+    @pieces << piece unless @pieces.include? piece
+  end
 end
 
 class Board
@@ -245,7 +278,9 @@ class EnPassant < Move
     cannot_capture!
     return false unless super
     return false unless @passed.occupied?
-    return true if @passed.side != @piece.side
+    return false unless @passed.side != @piece.side
+    return false unless @passed.occupant.is_a? Pawn
+    return true
   end
 
   def do!
@@ -255,7 +290,7 @@ class EnPassant < Move
 
   def reverse!
     super
-    @removed.place_on(@passed)
+    @removed.place_on(@passed) if @removed
   end
 end
 
@@ -341,6 +376,7 @@ class Piece
 
   def place_on(board = @board, square)
     @board = board
+    Side.find(@side) << self
     @square.remove! if @square
     @square = square.respond_to?(:occupy_with) ? square : @board[square]
     @square.occupy_with(self)
@@ -350,6 +386,11 @@ class Piece
     square = square.respond_to?(:occupy_with) ? square : @board[square]
     generate_move_list unless @move_list
     @move_list.detect {|move| move.destination == square }
+  end
+
+  def can_move?
+    generate_move_list unless @move_list
+    @move_list.length > 0
   end
 
   def to_s
@@ -718,35 +759,38 @@ class Pawn < Piece
     cur_pos = @square.to_hash
     @move_list = []
 
-    # Normal
-    move = Move.new(self, @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
-    move.cannot_capture!
-    @move_list.push move if move.possible?
-
-    # Double advance
-    unless @has_moved
-      move = DoubleAdvance.new(self, @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file]),
-                                     @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
+    begin
+      # Normal
+      move = Move.new(self, @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
       move.cannot_capture!
       @move_list.push move if move.possible?
-    end
 
-    # Capture
-    [{ :rank => 1, :file => -1},
-     { :rank => 1, :file =>  1}].each do |adjustment|
-      move = Move.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
-                                          cur_pos[:file] + adjustment[:file]))
-      move.must_capture!
-      @move_list.push move if move.possible?
-    end
+      # Double advance
+      unless @has_moved
+        move = DoubleAdvance.new(self, @board.square(cur_pos[:rank] + (direction * 2), cur_pos[:file]),
+                                       @board.square(cur_pos[:rank] + (direction * 1), cur_pos[:file]))
+        move.cannot_capture!
+        @move_list.push move if move.possible?
+      end
 
-    # En passant
-    [{ :rank => 1, :file => -1},
-     { :rank => 1, :file =>  1}].each do |adjustment|
-      move = EnPassant.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
-                                               cur_pos[:file] + adjustment[:file]),
-                                 @board.square(cur_pos[:rank], cur_pos[:file] + adjustment[:file]))
-      @move_list.push move if move.possible?
+      # Capture
+      [{ :rank => 1, :file => -1},
+       { :rank => 1, :file =>  1}].each do |adjustment|
+        move = Move.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
+                                            cur_pos[:file] + adjustment[:file]))
+        move.must_capture!
+        @move_list.push move if move.possible?
+      end
+
+      # En passant
+      [{ :rank => 1, :file => -1},
+       { :rank => 1, :file =>  1}].each do |adjustment|
+        move = EnPassant.new(self, @board.square(cur_pos[:rank] + (direction * adjustment[:rank]),
+                                                 cur_pos[:file] + adjustment[:file]),
+                                   @board.square(cur_pos[:rank], cur_pos[:file] + adjustment[:file]))
+        @move_list.push move if move.possible?
+      end
+    rescue Move::InvalidDestination
     end
 
     @move_list
