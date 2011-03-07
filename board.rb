@@ -31,7 +31,18 @@ class Side
     Side.register(self)
   end
 
-  attr_accessor :king
+  attr_accessor :king, :queenside_rook, :kingside_rook
+
+  def queenside_rook=(val)
+    return if @queenside_rook
+    @queenside_rook = val
+  end
+
+  def kingside_rook=(val)
+    return if @kingside_rook
+    @kingside_rook = val
+  end
+
   attr_reader :name
 end
 
@@ -101,6 +112,8 @@ class Square
     @square_color = ((rank + file) % 2 == 0) ? 'black' : 'white'
   end
 
+  attr_reader :rank, :file
+
   def notation
     "#{('a'..'h').to_a[@file-1]}#{@rank}"
   end
@@ -153,6 +166,7 @@ class Move
     @original_position = @piece.location
     @destination = destination
     raise InvalidDestination if @destination.nil?
+    @original_piece = @destination.occupant
   end
 
   attr_accessor :destination
@@ -201,6 +215,7 @@ class Move
   def reverse!
     @piece.has_moved!(false) if @piece.respond_to? :has_moved!
     @piece.place_on @original_position
+    @original_piece.place_on @destination if @original_piece
   end
 end
 
@@ -253,34 +268,64 @@ end
 
 class Castle < Move
   def initialize(piece, board, type)
+    cannot_capture!
     case type
-      when 'king-side'
+      when 'kingside'
         destination = { :file => 2 }
-      when 'queen-side'
-        destination = { :file => -3}
+      when 'queenside'
+        destination = { :file => -2}
     end
-    cur_pos = piece.location.to_hash
-    destination = board.square(cur_pos[:rank], cur_pos[:file] + destination[:file])
+    @cur_pos = piece.location.to_hash
+    @board = board
+    destination = @board.square(@cur_pos[:rank], @cur_pos[:file] + destination[:file])
     @type = type
     super(piece, destination)
+    @rook = Side.find(@piece.side).send("#{@type}_rook".to_sym)
+    @rook_origin = @rook.location if @rook
   end
 
   def notation
     return @notation if @notation
     @notation = case type
-      when 'king-side'
+      when 'kingside'
         '0-0'
-      when 'queen-side'
+      when 'queenside'
         '0-0-0'
     end
   end
 
   def possible?
-    false # stub
+    return false unless @piece.castleable? && @rook && @rook.castleable?
+    return false if @piece.in_check?
+
+    adjustment = case @type
+      when 'kingside';   1
+      when 'queenside'; -1
+    end
+    @rook_dest = @board.square(@cur_pos[:rank], @cur_pos[:file] + adjustment)
+    @rook_onto = @rook_dest.occupant
+
+    return false unless super # check for occupancy and checking at last square
+                              # must be after @rook_dest is set
+    return false if @rook_dest.occupied?
+    @piece.place_on @rook_dest
+    cannot_move = @piece.in_check?
+    @piece.place_on @original_position
+    return false if cannot_move
+    return true
   end
 
   def do!
-    # stub
+    super
+    @rook.place_on @rook_dest
+    @rook.has_moved!
+  end
+
+  def reverse!
+    super
+    @rook.place_on @rook_origin
+    @rook.has_moved!(false)
+    @rook_onto.place_on @rook_dest if @rook_onto
   end
 end
 
@@ -558,9 +603,9 @@ class King < Piece
       end
     end
 
-    move = Castle.new(self, @board, 'king-side')
+    move = Castle.new(self, @board, 'kingside')
     @move_list.push move if move.possible?
-    move = Castle.new(self, @board, 'queen-side')
+    move = Castle.new(self, @board, 'queenside')
     @move_list.push move if move.possible?
 
   end
@@ -629,6 +674,11 @@ class Rook < Piece
 
   def abbr
     'R'
+  end
+
+  def place_on(board = @board, square)
+    super
+    Side.find(@side).send(:"#{@square.file == 1 ? :queenside : :kingside}_rook=", self)
   end
 
   def castleable?

@@ -53,6 +53,7 @@ module BoardConfiguration
     def self.onto(board)
       Side.create('white', 'black')
       King.new('white').place_on(board, 'e5')
+      Queen.new('black').place_on(board, 'd1')
     end
   end
 
@@ -88,6 +89,36 @@ module BoardConfiguration
       King.new('white').place_on(board, 'e5')
       rook_pos = ['e1', 'b5', 'e7', 'f5']
       Rook.new('black').place_on(board, rook_pos[rand(4)])
+    end
+  end
+
+  class TestCastlingNormal
+    def self.onto(board)
+      Side.create('white', 'black')
+      King.new('white').place_on(board, 'e1')
+      Rook.new('white').place_on(board, 'a1')
+      Rook.new('white').place_on(board, 'h1')
+    end
+  end
+
+  class TestCastlingBlockedByBishop < TestCastlingNormal
+    def self.onto(board)
+      super
+      Bishop.new('white').place_on(board, 'f1')
+    end
+  end
+
+  class TestCastlingBlockedByCheck < TestCastlingNormal
+    def self.onto(board)
+      super
+      Queen.new('black').place_on(board, 'e5')
+    end
+  end
+
+  class TestCastlingBlockedByThreat < TestCastlingNormal
+    def self.onto(board)
+      super
+      Queen.new('black').place_on(board, 'f5')
     end
   end
 end
@@ -199,6 +230,8 @@ class KingMovements < Test::Unit::TestCase
     board['e5'].move_to! 'e6'
     board = Board.new(BoardConfiguration::TestKingMovement)
     board['e5'].move_to! 'f6'
+    board = Board.new(BoardConfiguration::TestKingMovement)
+    assert_raise(RuntimeError) { board['e5'].move_to! 'd4' }
   end
 
   def test_in_check
@@ -210,5 +243,18 @@ class KingMovements < Test::Unit::TestCase
     assert(board['e5'].occupant.in_check?, "Rook isn't checking correctly")
     board = Board.new(BoardConfiguration::TestCheckByBishop)
     assert(board['e5'].occupant.in_check?, "Bishop isn't checking correctly")
+  end
+
+  def test_castling
+    board = Board.new(BoardConfiguration::TestCastlingNormal)
+    board['e1'].move_to! 'g1'
+    board = Board.new(BoardConfiguration::TestCastlingNormal)
+    board['e1'].move_to! 'c1'
+    board = Board.new(BoardConfiguration::TestCastlingBlockedByBishop)
+    assert_raise(RuntimeError) { board['e1'].move_to! 'g1' }
+    board = Board.new(BoardConfiguration::TestCastlingBlockedByCheck)
+    assert_raise(RuntimeError) { board['e1'].move_to! 'g1' }
+    board = Board.new(BoardConfiguration::TestCastlingBlockedByThreat)
+    assert_raise(RuntimeError) { board['e1'].move_to! 'g1' }
   end
 end
