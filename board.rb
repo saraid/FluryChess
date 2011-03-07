@@ -96,13 +96,6 @@ module BoardConfiguration
       ('a'..'h').each { |file| Pawn.new('black').place_on(board, "#{file}7") }
     end
   end
-
-  class TestKingMovement
-    def self.onto(board)
-      King.new('white').place_on(board, 'e5')
-      Queen.new('black').place_on(board, 'f1')
-    end
-  end
 end
 
 class Square
