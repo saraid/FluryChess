@@ -1,3 +1,5 @@
+require 'json'
+
 class Object
   def _getvar sym
     instance_variable_get sym
@@ -16,6 +18,8 @@ class Game
     @turn = 0
   end
 
+  attr_reader :board
+
   def move command
     src, dst = command.split('-')
     raise "No piece here..." unless @board[src].occupied?
@@ -31,6 +35,10 @@ class Game
 
   def over?
     Side.find(turn).king.in_check? && Side.find(turn).pieces.none? { |piece| piece.can_move? }
+  end
+
+  def to_json
+    @board.to_json
   end
 end
 
@@ -108,6 +116,10 @@ class Board
   def file index
     (1..8).collect { |rank| @square["#{index}#{rank}"] }
   end
+
+  def to_json
+    @square.to_json
+  end
 end
 
 module BoardConfiguration
@@ -182,6 +194,10 @@ class Square
 
   def to_hash
     { :rank => @rank, :file => @file }
+  end
+
+  def to_json json, level
+    occupied?() ? @piece.to_s : 'Empty'
   end
 end
 
