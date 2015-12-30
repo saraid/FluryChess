@@ -1,0 +1,15 @@
+module Chess
+  module Piece
+    class Bishop < Base
+      def move_list(game, check_validity = true)
+        super do
+          moves = []
+          moves.concat(construct_vector_movements(game, { rank: -1, file: -1 }))
+          moves.concat(construct_vector_movements(game, { rank: -1, file:  1 }))
+          moves.concat(construct_vector_movements(game, { rank:  1, file: -1 }))
+          moves.concat(construct_vector_movements(game, { rank:  1, file:  1 }))
+        end
+      end
+    end
+  end
+end
