@@ -1,7 +1,7 @@
 module Chess
   module Move
     class Promotion < Base
-      class InvalidRankForPromotion < StandardError; end
+      class InvalidRankForPromotion < Chess::Error; end
 
       VALID_PROMOTION_RANKS = [
         Chess::Piece::Queen,

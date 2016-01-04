@@ -9,9 +9,9 @@ require_relative 'move/promotion'
 module Chess
   # A move is a transform between two board states.
   module Move
-    class ImpossibleMoveForBoardState < StandardError; end
-    class AmbiguousPieceToMove < StandardError; end
-    class CouldNotFindPiece < StandardError; end
+    class ImpossibleMoveForBoardState < Chess::Error; end
+    class AmbiguousPieceToMove < Chess::Error; end
+    class CouldNotFindPiece < Chess::Error; end
 
     extend Chess::Notation::StandardAlgebraic::MoveParser
 

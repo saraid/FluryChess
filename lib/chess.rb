@@ -2,6 +2,10 @@ require_relative 'refinements/enumerable'
 require_relative 'refinements/try'
 require_relative 'refinements/memoize'
 
+module Chess
+  class Error < StandardError; end
+end
+
 require_relative 'chess/move'
 require_relative 'chess/piece'
 require_relative 'chess/notation'
