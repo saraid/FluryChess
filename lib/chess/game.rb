@@ -13,8 +13,7 @@ module Chess
 
     def_delegators :@history,
       :last_move,
-      :over?, :checkmated?, :draw?,
-      :to_pgn
+      :over?, :checkmated?, :draw?
 
     def self.from_pgn(pgn)
       options = { metadata: {} }
@@ -98,6 +97,25 @@ module Chess
         end
       move_taken move
       [ move.to_english, to_fen ]
+    end
+
+    def to_pgn
+      output = []
+      metadata.each do |key, value|
+        output << %Q{[#{key.capitalize} "#{value}"]}
+      end
+      max_length = [ output.collect(&:length).max, 30 ].max
+      output << '' unless output.empty?
+
+      pgn = history.to_pgn
+      output << pgn
+     #while pgn.length > max_length
+     #  index = pgn[0..max_length].rindex(/\d+\./)
+     #  output << pgn[0...index]
+     #  pgn = pgn[index..-1]
+     #end
+
+      output.join($/)
     end
   end
 end
