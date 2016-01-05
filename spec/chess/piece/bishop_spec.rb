@@ -16,4 +16,24 @@ describe Chess::Piece::Bishop do
       end
     end
   end
+
+  describe '.to_unicode' do
+    let(:bishop) { Chess::Piece::Bishop.new(side) }
+
+    context 'white' do
+      let(:side) { :white }
+
+      it 'should report the correct symbol' do
+        expect(bishop.to_unicode).to eq('♗')
+      end
+    end
+
+    context 'black' do
+      let(:side) { :black }
+
+      it 'should report the correct symbol' do
+        expect(bishop.to_unicode).to eq('♝')
+      end
+    end
+  end
 end

@@ -1,8 +1,17 @@
 require 'spec_helper'
 
-describe Chess::Notation::FigurineAlgebraic do
+describe Chess::Notation::StandardAlgebraic do
   describe '.matcher' do
     let(:regex) { Chess::Notation::StandardAlgebraic.matcher }
+
+    it 'should reject non-moves' do
+      expect('e4lol').not_to match(regex)
+    end
+
+    it 'should understand a castling' do
+      expect('O-O').to match(regex)
+      expect('O-O-O').to match(regex)
+    end
 
     it 'should understand a pawn move' do
       expect('e4').to match(regex)
