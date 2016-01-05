@@ -135,6 +135,26 @@ module Chess
       data.join($/)
     end
 
+    # Render the board usefully in Slack formatting
+    def to_slack(options = {})
+      outputter = lambda do |square|
+        if options[:highlight] == square.to_s
+          highlighter.call(square.to_unicode)
+        else
+          square.to_unicode
+        end
+      end
+
+      data = (1..8).collect do |rank|
+        ('a'..'h').collect do |file|
+          square = @squares["#{file}#{rank}"]
+          outputter.call(square)
+        end.join(' ')
+      end
+      data.reverse! unless options[:perspective] == :black
+      data.join($/)
+    end
+
     def to_fen
       (1..8).collect do |rank|
         ('a'..'h').inject('') do |rank_fen, file|
