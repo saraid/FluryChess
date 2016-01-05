@@ -14,7 +14,7 @@ No idea whether or not I'll continue working on this. It was a weekend project.
   * [ ] Coordinate
   * [ ] Extended Position Description (EPD)
 * [ ] Handle stalemates.
-* [ ] Refuse to play moves when the game is over.
+* [x] Refuse to play moves when the game is over.
 * [ ] Manually set a game to "draw accepted" state.
 * [ ] Classify opening moves according to the Encyclopedia of Chess Openings (ECO)
 * [ ] Implement the Fifty-Move Rule.

@@ -5,6 +5,8 @@ module Chess
   class Game
     extend Forwardable
 
+    class Over < Chess::Error; end
+
     def_delegators :@current_state,
       :board, :en_passant_target, :can_castle?, :full_move_number, :active_color,
       :to_fen, :to_state
@@ -84,6 +86,7 @@ module Chess
     end
 
     def play(movetext, notation = :san)
+      raise Over if @history.over?
       move =
         if movetext.class.ancestors.include? Chess::Move::Base
           movetext
