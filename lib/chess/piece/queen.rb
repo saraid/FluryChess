@@ -16,6 +16,13 @@ module Chess
           moves.concat(construct_vector_movements(game, { rank:  1, file:  0 }))
         end
       end
+
+      def to_unicode
+        case side
+        when :white then '♕'
+        when :black then '♛'
+        end
+      end
     end
   end
 end

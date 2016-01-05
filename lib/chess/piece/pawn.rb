@@ -73,6 +73,13 @@ module Chess
         end
       end
 
+      def to_unicode
+        case side
+        when :white then '♙'
+        when :black then '♟'
+        end
+      end
+
       private
       def starting_rank
         case side

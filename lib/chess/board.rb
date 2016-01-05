@@ -110,6 +110,12 @@ module Chess
     end
 
     def to_ascii(options = {})
+      options[:using] ||=
+        case options[:using]
+        when :unicode then :to_unicode
+        else :to_fen
+        end
+
       data = (1..8).collect do |rank|
         ('a'..'h').collect do |file|
           square = @squares["#{file}#{rank}"]
@@ -117,7 +123,7 @@ module Chess
             'X'
           else
             if square.occupied?
-              square.to_fen
+              square.send options[:to_method]
             else
               '.'
             end

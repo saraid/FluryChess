@@ -32,6 +32,10 @@ module Chess
           send(side == :white ? :upcase : :downcase)
       end
 
+      def to_unicode
+        raise NotImplementedError
+      end
+
       protected
       def construct_move_set_from_adjustments(game, adjustments, extra_options = {})
         board = game.board

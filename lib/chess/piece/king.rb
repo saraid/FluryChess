@@ -31,6 +31,13 @@ module Chess
           moves
         end
       end
+
+      def to_unicode
+        case side
+        when :white then '♔'
+        when :black then '♚'
+        end
+      end
     end
   end
 end

@@ -16,6 +16,13 @@ module Chess
           moves = construct_move_set_from_adjustments(game, adjustments)
         end
       end
+
+      def to_unicode
+        case side
+        when :white then '♘'
+        when :black then '♞'
+        end
+      end
     end
   end
 end
