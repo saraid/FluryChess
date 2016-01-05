@@ -12,6 +12,7 @@ module Chess
       :to_fen, :to_state
 
     def_delegators :@history,
+      :last_move,
       :over?, :checkmated?, :draw?,
       :to_pgn
 

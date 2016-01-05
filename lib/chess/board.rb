@@ -116,18 +116,19 @@ module Chess
         else :to_fen
         end
 
+      highlighter = options[:highlight_as] || proc { 'X' }
+      outputter = lambda do |square|
+        if options[:highlight] == square.to_s
+          highlighter.call(square.send(options[:using]))
+        else
+          square.send(options[:using])
+        end
+      end
+
       data = (1..8).collect do |rank|
         ('a'..'h').collect do |file|
           square = @squares["#{file}#{rank}"]
-          if options[:highlight] == square.to_s
-            'X'
-          else
-            if square.occupied?
-              square.send options[:using]
-            else
-              '.'
-            end
-          end
+          outputter.call(square)
         end.join
       end
       data.reverse! unless options[:perspective] == :black

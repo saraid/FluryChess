@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = 'FluryChess'
-  spec.version       = '1.0.7'
+  spec.version       = '1.0.8'
   spec.authors       = ['Michael Chui']
   spec.email         = ['saraid216@gmail.com']
   spec.summary       = %q{Chess program}

@@ -17,6 +17,14 @@ module Chess
       "#{file}#{rank}"
     end
 
+    def to_unicode
+      if @occupant.respond_to? :to_unicode
+        @occupant.to_unicode
+      else
+        '▢'
+      end
+    end
+
     def method_missing(id, *args, &block)
       @occupant.send(id, *args, &block) if @occupant.respond_to? id
     end
