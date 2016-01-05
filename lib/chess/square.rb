@@ -17,8 +17,8 @@ module Chess
       "#{file}#{rank}"
     end
 
-    def to_fen
-      @occupant.to_fen if @occupant.respond_to? :to_fen
+    def method_missing(id, *args, &block)
+      @occupant.send(id, *args, &block) if @occupant.respond_to? id
     end
   end
 end
