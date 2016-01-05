@@ -110,7 +110,7 @@ module Chess
     end
 
     def to_ascii(options = {})
-      options[:using] ||=
+      options[:using] =
         case options[:using]
         when :unicode then :to_unicode
         else :to_fen
@@ -123,7 +123,7 @@ module Chess
             'X'
           else
             if square.occupied?
-              square.send options[:to_method]
+              square.send options[:using]
             else
               '.'
             end
