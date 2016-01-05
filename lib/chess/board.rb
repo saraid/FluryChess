@@ -139,7 +139,7 @@ module Chess
     def to_slack(options = {})
       outputter = lambda do |square|
         if options[:highlight] == square.to_s
-          highlighter.call(square.to_unicode)
+          "`#{square.to_unicode}`"
         else
           square.to_unicode
         end
