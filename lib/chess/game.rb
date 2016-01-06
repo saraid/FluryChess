@@ -97,7 +97,14 @@ module Chess
           end
         end
       move_taken move
-      [ move.to_english, to_fen ]
+      english = move.to_english
+      if @history.over?
+        english << ' Game over.'
+        english << " #{active_color.capitalize} wins." if @history.checkmated?
+      else
+        english << " #{active_color.capitalize} to move."
+      end
+      [ english, to_fen ]
     end
   end
 end
