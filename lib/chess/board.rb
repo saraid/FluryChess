@@ -56,6 +56,10 @@ module Chess
       @squares[coord]
     end
 
+    def inspect
+      to_fen
+    end
+
     def dup
       duplicate = super
       duplicate.instance_variable_set(:@squares, {})
